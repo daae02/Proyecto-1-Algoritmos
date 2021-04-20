@@ -1,0 +1,10 @@
+^C:\ALGORITMOS\BUILD\CMAKEFILES\23C4FDC34E411939F0E324DD7A32C150\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Algoritmos -BC:/Algoritmos/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Algoritmos/build/ALGORITMOS.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
