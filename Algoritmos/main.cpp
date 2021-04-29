@@ -9,7 +9,7 @@ Mat rescale(Mat image){
     int width = floor(image.cols * SCALE) ;
     int height = floor(image.rows * SCALE);
     Mat resized = Mat(height,width,3);
-    resize(image,resized,resized.size(),0,0,INTER_NEAREST);
+    resize(image,resized,resized.size(),0,0,INTER_CUBIC);
     return resized;
 }
 hashMap matToHash(Mat image){
@@ -18,10 +18,10 @@ hashMap matToHash(Mat image){
     int xTimes = image.cols; 
     for(int y = 0; y+SHEIGHT < yTimes;){
         for(int x = 0; x+SWIDTH < xTimes;){
-            hash.insert(copy(image,x,y));
-            x +=7;
+            hash.insert(copy(image,x,y),x,y);
+            x +=5;
         }
-        y+=7;
+        y+=5;
     }
 
     return hash;
@@ -30,23 +30,21 @@ int compare(hashMap hash1,hashMap hash2){
     int num = 0;
     for(int i=0; i < 256; i++){
         std::cout<<"Bucket # "<<i<<std::endl;
-        num += hash2.getCoincidences(hash1,i);
-
+        num = hash2.getCoincidences(hash1,i, num);
     }
     std::cout<<"Coincidencias: "<< num <<std::endl;
     return 0;
 }
 int main(){
     Mat image1 = imread("img3.jpg");
-    Mat image2 = imread("img2.jpg",1);
-    //image1 = rescale(image1);
-    //image2 = rescale(image2);
+    Mat image2 = imread("img2.jpg");
+    image1 = rescale(image1);
+    image2 = rescale(image2);
     std::cout<<"Termina reescalado"<<std::endl;
     hashMap hash1 = matToHash(image1);
     hashMap hash2 = matToHash(image2);
     std::cout<<"Termina hashes"<<std::endl;
     int num = compare(hash1,hash2);
-    String name = "sale"+std::to_string(num)+".jpg";
     std::cout<<"Termina comparacion"<<std::endl;
     imshow("Prueba de que soy un genio", image2);
     waitKey(0);

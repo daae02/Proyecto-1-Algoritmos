@@ -1,15 +1,19 @@
 #include <opencv2/opencv.hpp>
 using namespace cv;
+#define SCALE 0.5
 #define SWIDTH floor(192*SCALE) 
 #define SHEIGHT floor(108*SCALE) 
-#define SCALE 1
+
 struct hashNode{
     Mat value;
     int index;
     hashNode* next;
-    hashNode(Mat pValue, int pIndex){
+    int x;
+    int y;
+    hashNode(Mat pValue, int px, int py){
         value = pValue;
-        index = pIndex ;
+        x = px;
+        y = py;
         next = NULL;
     }
 };
@@ -21,8 +25,8 @@ struct hashBucket{
         first = last = NULL;
         cant = 0;
     }
-    void insert(Mat table, int index){
-        hashNode* newNode = new hashNode(table, index);
+    void insert(Mat table, int x, int y){
+        hashNode* newNode = new hashNode(table,x, y);
         if (first == NULL){
             first = last = newNode;
         }
@@ -40,15 +44,17 @@ struct hashMap{
             buckets[i] = hashBucket();
         }
     }
-    void insert(Mat table){
+    void insert(Mat table, int x, int y){
         Vec3b pixelColor = table.at<cv::Vec3b>(0,0);
-        buckets[pixelColor[0]].insert(table,buckets[pixelColor[0]].cant);
+        buckets[pixelColor[0]].insert(table,x,y);
     }
-    bool matXor(Mat matSrc, Mat matDest, int indexS, int indexD){
+    bool matXor(hashNode * fuente,hashNode * destino, int count){
+        Mat matSrc = fuente->value;
+        Mat matDest = destino->value;
         String name1, name2;
-        int matY = floor(matSrc.rows*0.30);
-        int matX = floor(matSrc.cols*0.30);
-        int coincidence = 30;
+        int matY = floor(matSrc.rows*0.80);
+        int matX = floor(matSrc.cols*0.80);
+        int coincidence = 50;
         //int tolerace = floor((matY*matX)*0.60);
         for (int y = 0; y < matY; y++)
         {
@@ -67,38 +73,32 @@ struct hashMap{
                 }
             }
         
-        name1 = "coincs/"+std::to_string(indexS)+std::to_string(indexD)+"n1.jpg";
-        name2 = "coincs/"+std::to_string(indexS)+std::to_string(indexD)+"n2.jpg";
+        name1 = "coincs/"+std::to_string(count)+"_"+std::to_string(fuente->x)+"_"+std::to_string(fuente->y)+"n1.jpg";
+        name2 = "coincs/"+std::to_string(count)+"_"+std::to_string(destino->x)+"_"+std::to_string(destino->y)+"n2.jpg";
         imwrite(name1,matSrc);
         imwrite(name2,matDest);
         std::cout<<"Coincidencia encontrada"<<std::endl;
         return true;
         
     }
-    int getCoincidences(hashMap pHash, int pBucket){
-        int count = 0;
+    int getCoincidences(hashMap pHash, int pBucket,int count){
         /*std::cout<<"Pixeles en source: "<< this->buckets[pBucket].cant <<std::endl;
         std::cout<<"Pixeles en dest: "<< pHash.buckets[pBucket].cant <<std::endl;*/
         hashNode* tmpSrc = this->buckets[pBucket].first;
-        hashNode* tmpDest = pHash.buckets[pBucket].first;
-        hashNode* fnlSrc = this->buckets[pBucket].last;
-        hashNode* fnlDest = pHash.buckets[pBucket].last;
-        int contS = this->buckets[pBucket].cant; 
-        int contD = pHash.buckets[pBucket].cant; 
+        hashNode* tmpDest;
         while(tmpSrc != NULL){
+            tmpDest = pHash.buckets[pBucket].first;
             while(tmpDest != NULL){
-                if(matXor(tmpSrc->value,tmpDest->value,contS,contD)){
+                if(matXor(tmpSrc,tmpDest, count)){
                     count++;
-                    tmpSrc = tmpSrc->next;
+                    break;
                 }
                 tmpDest = tmpDest->next;
-                contD++;
             }
-            if(count != 0){
+            /*if(count != 0){
                 return count;        
-            }
+            }*/
             tmpSrc = tmpSrc->next;
-            contS++;
         }
         return count;
     }
