@@ -1,20 +1,29 @@
 #include <opencv2/opencv.hpp>
+#include "files.cpp"
 using namespace cv;
 #define SCALE 0.5
 #define SWIDTH floor(192*SCALE) 
 #define SHEIGHT floor(108*SCALE) 
 
+
+
 struct hashNode{
     Mat value;
     int index;
+    int r;
+    int g;
     hashNode* next;
+    hashNode* before;
     int x;
     int y;
     hashNode(Mat pValue, int px, int py){
         value = pValue;
+        r = value.at<cv::Vec3b>(0,0)[0];
+        g = value.at<cv::Vec3b>(0,0)[1];
         x = px;
         y = py;
         next = NULL;
+        before = NULL;
     }
 };
 struct hashBucket{
@@ -26,20 +35,50 @@ struct hashBucket{
         cant = 0;
     }
     void insert(Mat table, int x, int y){
+        cant++;
         hashNode* newNode = new hashNode(table,x, y);
         if (first == NULL){
             first = last = newNode;
         }
         else{
-            last->next = newNode;
-            last = newNode;
+            if(newNode->g < first->g){
+                newNode -> next = first;
+                first -> before = newNode;
+                first = newNode;
+                
+            }
+            else{
+                hashNode*tempNode = first;
+                while(tempNode != NULL){
+                    if(newNode->g < tempNode->g){
+                        tempNode -> before -> next = newNode;
+                        newNode ->next = tempNode;
+                        newNode ->before = tempNode ->before;
+                        tempNode -> before = newNode;
+                        return;
+                    }
+                    tempNode = tempNode ->next;
+                }
+                newNode ->before = last;
+                last -> next = newNode;
+                last = newNode;
+            }
         }
-        cant++;
+        
     }
 };
 struct hashMap{
     hashBucket buckets[256];
-    hashMap(){
+    float percX;
+    float percY;
+    int tolerance;
+    hashMap(float pPercX, float pPercY, int pTolerance){
+        percX = pPercX;
+        std::cout << percX << endl; 
+        percY = pPercY;
+        std::cout << percY << endl;
+        tolerance = pTolerance;
+        std::cout << pTolerance << endl;
         for(int i=0; i < 256; i++){
             buckets[i] = hashBucket();
         }
@@ -52,17 +91,16 @@ struct hashMap{
         Mat matSrc = fuente->value;
         Mat matDest = destino->value;
         String name1, name2;
-        int matY = floor(matSrc.rows*0.80);
-        int matX = floor(matSrc.cols*0.80);
-        int coincidence = 50;
+        int matY = floor(matSrc.rows*percX);
+        int matX = floor(matSrc.cols*percY);
         //int tolerace = floor((matY*matX)*0.60);
         for (int y = 0; y < matY; y++)
         {
             for (int x = 0; x < matX; x++)
             {
-                if (abs(matSrc.at<cv::Vec3b>(y,x)[0] - matDest.at<cv::Vec3b>(y,x)[0]) > coincidence ||
-                    abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > coincidence ||
-                    abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > coincidence )
+                if (abs(matSrc.at<cv::Vec3b>(y,x)[0] - matDest.at<cv::Vec3b>(y,x)[0]) > tolerance ||
+                    abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
+                    abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
                         //tolerace--;
                         //if(tolerace == 0){
