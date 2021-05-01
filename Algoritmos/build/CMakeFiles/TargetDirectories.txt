@@ -1,3 +1,0 @@
-C:/Algoritmos/build/CMakeFiles/ALGORITMOS.dir
-C:/Algoritmos/build/CMakeFiles/ALL_BUILD.dir
-C:/Algoritmos/build/CMakeFiles/ZERO_CHECK.dir
