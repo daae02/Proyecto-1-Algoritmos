@@ -2,13 +2,13 @@
 #include <string>
 
 using namespace std;
-void readFile(string filename, int values[3]){
+void readFile(string filename, float values[],int size){
     ifstream archivo(filename);
 	char linea[128];
     int index = 0;
-    while(index !=3){
+    while(index !=size){
         archivo.getline(linea, sizeof(linea));
-        values[index] = stoi(linea);
+        values[index] = stof(linea);
         index++;
     }
     archivo.close();
