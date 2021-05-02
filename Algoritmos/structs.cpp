@@ -9,13 +9,13 @@ using namespace cv;
 
 struct hashNode{
     Mat value;
-    int index;
     int r;
     int g;
-    hashNode* next;
-    hashNode* before;
     int x;
     int y;
+    hashNode* next;
+    hashNode* before;
+    bool paired;
     hashNode(Mat pValue, int px, int py){
         value = pValue;
         r = value.at<cv::Vec3b>(0,0)[0];
@@ -24,6 +24,7 @@ struct hashNode{
         y = py;
         next = NULL;
         before = NULL;
+        paired = false;
     }
 };
 struct hashBucket{
@@ -102,8 +103,6 @@ struct hashMap{
                     abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
-                        //tolerace--;
-                        //if(tolerace == 0){
                             return false;
    
                         //}
@@ -126,9 +125,12 @@ struct hashMap{
         hashNode* tmpDest;
         while(tmpSrc != NULL){
             tmpDest = pHash.buckets[pBucket].first;
-            while(tmpDest != NULL){
-                if(matXor(tmpSrc,tmpDest, count)){
+            while(tmpDest!= NULL){
+                if(abs(tmpDest->g -tmpSrc->g)< tolerance
+                && !tmpDest->paired
+                && matXor(tmpSrc,tmpDest, count)){
                     count++;
+                    tmpDest->paired = true;
                     break;
                 }
                 tmpDest = tmpDest->next;
