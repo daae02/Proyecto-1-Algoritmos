@@ -1,6 +1,10 @@
 #include <iostream>
 #include "structs.cpp"
 
+double calculatePercentage(double total, double checked){
+    return checked/total;
+}
+
 Mat copy(Mat source, int pX, int pY){
     Rect roi(pX,pY,SWIDTH,SHEIGHT);
     Mat sliding = source(roi);
