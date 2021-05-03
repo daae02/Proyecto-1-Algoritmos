@@ -1,10 +1,6 @@
 #include <iostream>
 #include "structs.cpp"
 
-double calculatePercentage(double total, double checked){
-    return checked/total;
-}
-
 Mat copy(Mat source, int pX, int pY){
     Rect roi(pX,pY,SWIDTH,SHEIGHT);
     Mat sliding = source(roi);
@@ -41,7 +37,7 @@ int compare(hashMap hash1,hashMap hash2){
     return 0;
 }
 int main(){
-    float values[4];
+    double values[4];
     readFile("values.txt", values,4);
     int index = 0;
     /*while(index != 4){
