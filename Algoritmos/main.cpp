@@ -17,9 +17,15 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
     hashMap hash = hashMap(pPercX, pPercY, pTolerance);
     int yTimes = image.rows;
     int xTimes = image.cols;
+    hashNode * beforeNode;
+    hashNode * current = NULL;
     for(int y = 0; y+SHEIGHT < yTimes;){
+        beforeNode = NULL;
         for(int x = 0; x+SWIDTH < xTimes;){
-            hash.insert(copy(image,x,y),x,y);
+            current = hash.insert(copy(image,x,y),x,y);
+            if(beforeNode != NULL){
+                beforeNode->followingMat = current;
+            }
             x +=sampleRate;
         }
         y+=sampleRate;
@@ -30,7 +36,8 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
 int compare(hashMap hash1,hashMap hash2){
     int num = 0;
     for(int i=0; i < 256; i++){
-        std::cout<<"Bucket # "<<i<<std::endl;
+        int biggest = hash1.findBiggestBucket();
+        std::cout<<"Bucket # "<<biggest<<std::endl;
         num = hash2.getCoincidences(hash1,i, num);
     }
     std::cout<<"Coincidencias: "<< num <<std::endl;
@@ -44,6 +51,7 @@ int main(){
 		cout << "value: " << values[index] << endl;
 		index++;
 	}*/
+    
     Mat image1 = imread("img3.jpg");
     Mat image2 = imread("img2.jpg");
     image1 = rescale(image1);
