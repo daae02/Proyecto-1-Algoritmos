@@ -70,10 +70,10 @@ struct hashBucket{
 };
 struct hashMap{
     hashBucket buckets[256];
-    float percX;
-    float percY;
+    double percX;
+    double percY;
     int tolerance;
-    hashMap(float pPercX, float pPercY, int pTolerance){
+    hashMap(double pPercX, double pPercY, int pTolerance){
         percX = pPercX;
         std::cout << percX << endl; 
         percY = pPercY;
@@ -88,32 +88,50 @@ struct hashMap{
         Vec3b pixelColor = table.at<cv::Vec3b>(0,0);
         buckets[pixelColor[0]].insert(table,x,y);
     }
-    bool matXor(hashNode * fuente,hashNode * destino, int count){
+    
+    void adjustPercentage(double totalX, double checkedX, double totalY , double checkedY){
+        double percentageX = checkedX/totalX;
+        double percentageY = checkedY/totalY;
+        std::cout<<"viejo x: "<<percX<<" viejo y: "<<percY<<std::endl;
+        std::cout<<"nuevo x: "<<percentageX<<" nuevo y: "<<percentageY<<std::endl;
+        if(percentageX < percX && percX-percentageX < 0.1){
+            percX = (percentageX+percX)/2;
+            //std::cout<<"x: "<<percX<<" y: "<<percY<<std::endl;
+        }
+        if(percentageY < percY && (percX-percentageY) < 0.1){
+            percY = (percentageY+percY)/2;
+            //std::cout<<"x: "<<percX<<" y: "<<percY<<std::endl;
+        }
+        //std::cout<<"por x: "<<percentageX<<" por y: "<<percentageY<<std::endl;
+    }
+    bool matDifference(hashNode * fuente,hashNode * destino, int count){
         Mat matSrc = fuente->value;
         Mat matDest = destino->value;
         String name1, name2;
         int matY = floor(matSrc.rows*percX);
         int matX = floor(matSrc.cols*percY);
-        //int tolerace = floor((matY*matX)*0.60);
+        int total = matSrc.rows * matSrc.cols;
+        int cont = 0;
         for (int y = 0; y < matY; y++)
         {
             for (int x = 0; x < matX; x++)
             {
+                //cont++;
                 if (abs(matSrc.at<cv::Vec3b>(y,x)[0] - matDest.at<cv::Vec3b>(y,x)[0]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
-                            return false;
-   
-                        //}
+                         if ((x + y*matX)> (matX*matY)*0.5)
+                            adjustPercentage(total,(x + y*matX), matSrc.rows, y);
+                        return false;
                     }
                 }
             }
         
         name1 = "coincs/"+std::to_string(count)+"_"+std::to_string(fuente->x)+"_"+std::to_string(fuente->y)+"n1.jpg";
         name2 = "coincs/"+std::to_string(count)+"_"+std::to_string(destino->x)+"_"+std::to_string(destino->y)+"n2.jpg";
-        imwrite(name1,matSrc);
-        imwrite(name2,matDest);
+        //imwrite(name1,matSrc);
+        //imwrite(name2,matDest);
         std::cout<<"Coincidencia encontrada"<<std::endl;
         return true;
         
@@ -128,7 +146,7 @@ struct hashMap{
             while(tmpDest!= NULL){
                 if(abs(tmpDest->g -tmpSrc->g)< tolerance
                 && !tmpDest->paired
-                && matXor(tmpSrc,tmpDest, count)){
+                && matDifference(tmpSrc,tmpDest, count)){
                     count++;
                     tmpDest->paired = true;
                     break;
