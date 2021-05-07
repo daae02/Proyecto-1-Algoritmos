@@ -5,7 +5,7 @@ using namespace cv;
 #define SWIDTH floor(192*SCALE) 
 #define SHEIGHT floor(108*SCALE) 
 
-
+struct hashBucket;
 
 struct hashNode{
     Mat value;
@@ -15,8 +15,10 @@ struct hashNode{
     int y;
     hashNode* next;
     hashNode* before;
+    hashNode* followingMat;
+    hashBucket * container;
     bool paired;
-    hashNode(Mat pValue, int px, int py){
+    hashNode(Mat pValue, int px, int py,hashBucket * pContainer){
         value = pValue;
         r = value.at<cv::Vec3b>(0,0)[0];
         g = value.at<cv::Vec3b>(0,0)[1];
@@ -25,19 +27,23 @@ struct hashNode{
         next = NULL;
         before = NULL;
         paired = false;
+        followingMat = NULL;
+        container = pContainer;
     }
 };
 struct hashBucket{
+    bool checked;
     hashNode* first;
     hashNode* last;
     int cant;
     hashBucket(){
         first = last = NULL;
         cant = 0;
+        checked = false;
     }
-    void insert(Mat table, int x, int y){
+    hashNode* insert(Mat table, int x, int y){
         cant++;
-        hashNode* newNode = new hashNode(table,x, y);
+        hashNode* newNode = new hashNode(table,x, y, this);
         if (first == NULL){
             first = last = newNode;
         }
@@ -56,7 +62,7 @@ struct hashBucket{
                         newNode ->next = tempNode;
                         newNode ->before = tempNode ->before;
                         tempNode -> before = newNode;
-                        return;
+                        return newNode;
                     }
                     tempNode = tempNode ->next;
                 }
@@ -65,7 +71,7 @@ struct hashBucket{
                 last = newNode;
             }
         }
-        
+        return newNode;
     }
 };
 struct hashMap{
@@ -84,12 +90,13 @@ struct hashMap{
             buckets[i] = hashBucket();
         }
     }
-    void insert(Mat table, int x, int y){
+    hashNode* insert(Mat table, int x, int y){
         Vec3b pixelColor = table.at<cv::Vec3b>(0,0);
-        buckets[pixelColor[0]].insert(table,x,y);
+        return buckets[pixelColor[0]].insert(table,x,y);
+         
     }
     
-    void adjustPercentage(double totalX, double checkedX, double totalY , double checkedY){
+    /*void adjustPercentage(double totalX, double checkedX, double totalY , double checkedY){
         double percentageX = checkedX/totalX;
         double percentageY = checkedY/totalY;
         std::cout<<"viejo x: "<<percX<<" viejo y: "<<percY<<std::endl;
@@ -103,7 +110,36 @@ struct hashMap{
             //std::cout<<"x: "<<percX<<" y: "<<percY<<std::endl;
         }
         //std::cout<<"por x: "<<percentageX<<" por y: "<<percentageY<<std::endl;
+    }*/
+
+    int findBiggestBucket(){
+        hashBucket * biggest = NULL;
+        int biggestNumber;
+        for (int i = 0; i < 256; i++)
+        {
+            if((biggest == NULL || biggest->cant<buckets[i].cant) && !buckets[i].checked){
+                biggest = &buckets[i];
+                biggestNumber = i;
+            }
+        }
+        biggest->checked=true;
+        return biggestNumber;
+    } 
+
+    void evaluateMats(hashNode * hash, Vec3b pixelColor){
+        
+        if(hash->value.at<cv::Vec3b>(0,0)[0] != pixelColor[0]
+        || hash->value.at<cv::Vec3b>(0,0)[1] != pixelColor[1]
+        || hash->value.at<cv::Vec3b>(0,0)[2] != pixelColor[2]){
+            hash->paired= true;
+            hash->container->cant--;
+            if(hash->followingMat!=NULL){
+                evaluateMats(hash->followingMat, pixelColor);
+            } 
+        }
+        
     }
+
     bool matDifference(hashNode * fuente,hashNode * destino, int count){
         Mat matSrc = fuente->value;
         Mat matDest = destino->value;
@@ -121,8 +157,9 @@ struct hashMap{
                     abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
-                         if ((x + y*matX)> (matX*matY)*0.5)
-                            adjustPercentage(total,(x + y*matX), matSrc.rows, y);
+                         /*if ((x + y*matX)> (matX*matY)*0.5)
+                            adjustPercentage(total,(x + y*matX), matSrc.rows, y);*/
+                        evaluateMats(fuente,matSrc.at<cv::Vec3b>(y,x));
                         return false;
                     }
                 }
