@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include "files.cpp"
 using namespace cv;
-#define SCALE 0.5
+#define SCALE 0.25
 #define SWIDTH floor(192*SCALE) 
 #define SHEIGHT floor(108*SCALE) 
 
@@ -16,8 +16,10 @@ struct hashNode{
     hashNode* next;
     hashNode* before;
     hashNode* followingMat;
+    hashNode* verticalFollowingMat;
     hashBucket * container;
     bool paired;
+    hashNode(){}
     hashNode(Mat pValue, int px, int py,hashBucket * pContainer){
         value = pValue;
         r = value.at<cv::Vec3b>(0,0)[0];
@@ -28,6 +30,7 @@ struct hashNode{
         before = NULL;
         paired = false;
         followingMat = NULL;
+        verticalFollowingMat = NULL;
         container = pContainer;
     }
 };
@@ -95,23 +98,6 @@ struct hashMap{
         return buckets[pixelColor[0]].insert(table,x,y);
          
     }
-    
-    /*void adjustPercentage(double totalX, double checkedX, double totalY , double checkedY){
-        double percentageX = checkedX/totalX;
-        double percentageY = checkedY/totalY;
-        std::cout<<"viejo x: "<<percX<<" viejo y: "<<percY<<std::endl;
-        std::cout<<"nuevo x: "<<percentageX<<" nuevo y: "<<percentageY<<std::endl;
-        if(percentageX < percX && percX-percentageX < 0.1){
-            percX = (percentageX+percX)/2;
-            //std::cout<<"x: "<<percX<<" y: "<<percY<<std::endl;
-        }
-        if(percentageY < percY && (percX-percentageY) < 0.1){
-            percY = (percentageY+percY)/2;
-            //std::cout<<"x: "<<percX<<" y: "<<percY<<std::endl;
-        }
-        //std::cout<<"por x: "<<percentageX<<" por y: "<<percentageY<<std::endl;
-    }*/
-
     int findBiggestBucket(){
         hashBucket * biggest = NULL;
         int biggestNumber;
@@ -126,18 +112,18 @@ struct hashMap{
         return biggestNumber;
     } 
 
-    void evaluateMats(hashNode * hash, Vec3b pixelColor){
-        
-        if(hash->value.at<cv::Vec3b>(0,0)[0] != pixelColor[0]
-        || hash->value.at<cv::Vec3b>(0,0)[1] != pixelColor[1]
-        || hash->value.at<cv::Vec3b>(0,0)[2] != pixelColor[2]){
-            hash->paired= true;
-            hash->container->cant--;
-            if(hash->followingMat!=NULL){
-                evaluateMats(hash->followingMat, pixelColor);
-            } 
-        }
-        
+    void evaluateMats(hashNode * hash, int px, int py, int shifting){
+        if(hash != NULL && shifting < SWIDTH &&(hash->y < py || hash->x < px)){
+            if (!hash->paired){
+                hash->container->cant--;
+                hash->paired= true;
+            }
+            shifting++;
+            if (hash->x < px)
+                evaluateMats(hash->followingMat, px, py,shifting);
+            if (hash->y < py)
+                evaluateMats(hash->verticalFollowingMat, px, py,shifting);
+        }        
     }
 
     bool matDifference(hashNode * fuente,hashNode * destino, int count){
@@ -152,23 +138,16 @@ struct hashMap{
         {
             for (int x = 0; x < matX; x++)
             {
-                //cont++;
                 if (abs(matSrc.at<cv::Vec3b>(y,x)[0] - matDest.at<cv::Vec3b>(y,x)[0]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
-                         /*if ((x + y*matX)> (matX*matY)*0.5)
-                            adjustPercentage(total,(x + y*matX), matSrc.rows, y);*/
-                        evaluateMats(fuente,matSrc.at<cv::Vec3b>(y,x));
+                        if(x > matX*0.2 && y > matY*0.5)
+                            evaluateMats(fuente,fuente->x+x,fuente->y+y, 0);
                         return false;
                     }
                 }
             }
-        
-        name1 = "coincs/"+std::to_string(count)+"_"+std::to_string(fuente->x)+"_"+std::to_string(fuente->y)+"n1.jpg";
-        name2 = "coincs/"+std::to_string(count)+"_"+std::to_string(destino->x)+"_"+std::to_string(destino->y)+"n2.jpg";
-        //imwrite(name1,matSrc);
-        //imwrite(name2,matDest);
         std::cout<<"Coincidencia encontrada"<<std::endl;
         return true;
         
@@ -190,9 +169,6 @@ struct hashMap{
                 }
                 tmpDest = tmpDest->next;
             }
-            /*if(count != 0){
-                return count;        
-            }*/
             tmpSrc = tmpSrc->next;
         }
         return count;
