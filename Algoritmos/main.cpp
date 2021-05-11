@@ -17,6 +17,7 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
     hashMap hash = hashMap(pPercX, pPercY, pTolerance);
     int yTimes = image.rows;
     int xTimes = image.cols;
+    std::vector<hashNode*> verticalBeforeNode;
     hashNode * beforeNode;
     hashNode * current = NULL;
     for(int y = 0; y+SHEIGHT < yTimes;){
@@ -26,8 +27,14 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
             if(beforeNode != NULL){
                 beforeNode->followingMat = current;
             }
+            if(!verticalBeforeNode.empty()){
+                verticalBeforeNode.at(verticalBeforeNode.size()-1)->verticalFollowingMat = current;
+            }
+            verticalBeforeNode.push_back(current);
             x +=sampleRate;
+            beforeNode = current;
         }
+        verticalBeforeNode.clear();
         y+=sampleRate;
     }
 
@@ -47,13 +54,9 @@ int main(){
     double values[4];
     readFile("values.txt", values,4);
     int index = 0;
-    /*while(index != 4){
-		cout << "value: " << values[index] << endl;
-		index++;
-	}*/
-    
-    Mat image1 = imread("img3.jpg");
-    Mat image2 = imread("img2.jpg");
+
+    Mat image1 = imread("imag1.jpg");
+    Mat image2 = imread("imag2con1.jpg");
     image1 = rescale(image1);
     image2 = rescale(image2);
     std::cout<<"Termina reescalado"<<std::endl;
