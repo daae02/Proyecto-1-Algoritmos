@@ -126,7 +126,7 @@ struct hashMap{
         }        
     }
 
-    bool matDifference(hashNode * fuente,hashNode * destino, int count){
+    bool matDifferenceBT(hashNode * fuente,hashNode * destino, int count){
         Mat matSrc = fuente->value;
         Mat matDest = destino->value;
         String name1, name2;
@@ -142,7 +142,7 @@ struct hashMap{
                     abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
                     abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
-                        if(x > matX*0.2 && y > matY*0.5)
+                        if(x > matX*0.5 && y > matY*0.5)
                             evaluateMats(fuente,fuente->x+x,fuente->y+y, 0);
                         return false;
                     }
@@ -150,9 +150,10 @@ struct hashMap{
             }
         std::cout<<"Coincidencia encontrada"<<std::endl;
         return true;
+    
         
     }
-    int getCoincidences(hashMap pHash, int pBucket,int count){
+    int getCoincidencesBT(hashMap pHash, int pBucket,int count){
         /*std::cout<<"Pixeles en source: "<< this->buckets[pBucket].cant <<std::endl;
         std::cout<<"Pixeles en dest: "<< pHash.buckets[pBucket].cant <<std::endl;*/
         hashNode* tmpSrc = this->buckets[pBucket].first;
@@ -162,7 +163,7 @@ struct hashMap{
             while(tmpDest!= NULL){
                 if(abs(tmpDest->g -tmpSrc->g)< tolerance
                 && !tmpDest->paired
-                && matDifference(tmpSrc,tmpDest, count)){
+                && matDifferenceBT(tmpSrc,tmpDest, count)){
                     count++;
                     tmpDest->paired = true;
                     break;
@@ -172,5 +173,86 @@ struct hashMap{
             tmpSrc = tmpSrc->next;
         }
         return count;
+    }
+    hashBucket * getHalf(hashBucket * bucket, bool first){ 
+        //cout<<bucket->cant<<endl;
+        int mitad = floor(bucket->cant/2);
+        hashBucket * bucketHalf = new hashBucket();
+        hashNode * temp = bucket->first;
+        for (int i = 0; i < mitad; i++)
+        {  
+            temp = temp->next;
+        }
+        if(first){
+            bucketHalf ->first = bucket->first;
+            bucketHalf->last=temp->before;
+            bucketHalf->cant = mitad;
+        }
+        else{
+            bucketHalf->first=temp;
+            bucketHalf->last = bucket->last;
+            bucketHalf->cant = mitad;
+        }
+        
+        return bucketHalf;
+
+    }
+
+        bool matDifferenceDivideAndConquer(hashNode * fuente,hashNode * destino){
+        Mat matSrc = fuente->value;
+        Mat matDest = destino->value;
+        int matY = floor(matSrc.rows*percX);
+        int matX = floor(matSrc.cols*percY);
+        int total = matSrc.rows * matSrc.cols;
+        int cont = 0;
+        for (int y = 0; y < matY; y++)
+        {
+            for (int x = 0; x < matX; x++)
+            {
+                if (abs(matSrc.at<cv::Vec3b>(y,x)[0] - matDest.at<cv::Vec3b>(y,x)[0]) > tolerance ||
+                    abs(matSrc.at<cv::Vec3b>(y,x)[1] - matDest.at<cv::Vec3b>(y,x)[1]) > tolerance ||
+                    abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
+                    {
+                        return false;
+                    }
+                }
+            }
+        std::cout<<"Coincidencia encontrada"<<std::endl;
+        return true;
+        
+    }
+
+    int divideLists(hashBucket * bucket, hashNode * nodo){
+        if(bucket->cant == 1){
+            //cout<<"Llega a un elemento"<<endl;
+            return matDifferenceDivideAndConquer(bucket->first,nodo);
+        }
+        else if(bucket->first->g <= nodo->g ){
+            //cout<<"Division"<<endl;
+            hashBucket * bucketHalf1 = getHalf(bucket,true);
+            hashBucket * bucketHalf2 = getHalf(bucket,false);
+            return divideLists(bucketHalf1, nodo) + divideLists(bucketHalf2, nodo);
+        }
+        else if(bucket->first->g > nodo->g){
+            return 0;
+        }
+        return 0;
+    }
+    int getCoincidencesDivideAndConquer(hashMap pHash, int pBucket,int count){
+        hashNode* tmpSrc = this->buckets[pBucket].first;
+        hashBucket * cBucket = (pHash.buckets+pBucket);
+        if(cBucket->first == NULL){
+            return count;
+        } 
+        while(tmpSrc != NULL){
+            if(tmpSrc->g > cBucket->first->g ){
+               // cout<<"Entra al if"<<endl;
+                count += divideLists(cBucket, tmpSrc);
+            }
+            //cout<<"siguiente"<<endl;
+            tmpSrc = tmpSrc->next;
+        }
+        return count;
+        
     }
 };
