@@ -40,14 +40,23 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
 
     return hash;
 }
-int compare(hashMap hash1,hashMap hash2){
+int compareBT(hashMap hash1,hashMap hash2){
     int num = 0;
     for(int i=0; i < 256; i++){
         int biggest = hash1.findBiggestBucket();
-        std::cout<<"Bucket # "<<biggest<<std::endl;
-        num = hash2.getCoincidences(hash1,i, num);
+        //std::cout<<"Bucket # "<<biggest<<std::endl;
+        num = hash2.getCoincidencesBT(hash1,i, num);
     }
     std::cout<<"Coincidencias: "<< num <<std::endl;
+    return 0;
+}
+int compareDivideAndConquer(hashMap hash1,hashMap hash2){
+    int num = 0;
+    for(int i=0; i < 256; i++){
+        //cout<<"Cantidad en  bucket "<<hash1.buckets[i].cant<<endl;
+        num = hash2.getCoincidencesDivideAndConquer(hash1,i, num);
+    }
+    std::cout<<"Coincidencias divide and conquer: "<< num <<std::endl;
     return 0;
 }
 int main(){
@@ -64,7 +73,8 @@ int main(){
     cout << "hice hash1" << endl;
     hashMap hash2 = matToHash(image2, values[0], values[1], values[2], values[3]);
     std::cout<<"Termina hashes"<<std::endl;
-    int num = compare(hash1,hash2);
+    compareDivideAndConquer(hash1,hash2);
+    compareBT(hash1,hash2);
     std::cout<<"Termina comparacion"<<std::endl;
     imshow("Prueba de que somos un genio", image2);
     waitKey(0);
