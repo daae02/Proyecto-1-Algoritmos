@@ -46,9 +46,9 @@ struct hashBucket{
         cant = 0;
         checked = false;
     }
-    hashNode* insert(Mat table, int x, int y){
+    hashNode* insert(Mat pTable, int pX, int pY){
         cant++;
-        hashNode* newNode = new hashNode(table,x, y, this);
+        hashNode* newNode = new hashNode(pTable,pX, pY, this);
         if (first == NULL){
             first = last = newNode;
         }
@@ -95,9 +95,9 @@ struct hashMap{
             buckets[i] = hashBucket();
         }
     }
-    hashNode* insert(Mat table, int x, int y){
-        Vec3b pixelColor = table.at<cv::Vec3b>(0,0);
-        return buckets[pixelColor[0]].insert(table,x,y);
+    hashNode* insert(Mat pTable, int pX, int pY){
+        Vec3b pixelColor = pTable.at<cv::Vec3b>(0,0);
+        return buckets[pixelColor[0]].insert(pTable,pX,pY);
          
     }
     // --------------------  BACKTRACKING / DINAMICA  -------------------------
@@ -112,26 +112,27 @@ struct hashMap{
             }
         }
         biggest->checked=true;
+        cout << "Biggest Bucket: " << biggestNumber << endl;
         return biggestNumber;
     } 
 
-    void evaluateMats(hashNode * hash, int px, int py, int shifting){
-        if(hash != NULL && shifting < SWIDTH &&(hash->y < py || hash->x < px)){
-            if (!hash->paired){
-                hash->container->cant--;
-                hash->paired= true;
+    void evaluateMats(hashNode * pHash, int pX, int pY, int pShifting){
+        if(pHash != NULL && pShifting < SWIDTH &&(pHash->y < pY || pHash->x < pX)){
+            if (!pHash->paired){
+                pHash->container->cant--;
+                pHash->paired= true;
             }
-            shifting++;
-            if (hash->x < px)
-                evaluateMats(hash->followingMat, px, py,shifting);
-            if (hash->y < py)
-                evaluateMats(hash->verticalFollowingMat, px, py,shifting);
+            pShifting++;
+            if (pHash->x < pX)
+                evaluateMats(pHash->followingMat, pX, pY,pShifting);
+            if (pHash->y < pY)
+                evaluateMats(pHash->verticalFollowingMat, pX, pY,pShifting);
         }        
     }
 
-    bool matDifferenceBT(hashNode * fuente,hashNode * destino){
-        Mat matSrc = fuente->value;
-        Mat matDest = destino->value;
+    bool matDifferenceBT(hashNode * pFuente,hashNode * pDestino){
+        Mat matSrc = pFuente->value;
+        Mat matDest = pDestino->value;
         String name1, name2;
         int matY = floor(matSrc.rows*percX);
         int matX = floor(matSrc.cols*percY);
@@ -146,11 +147,12 @@ struct hashMap{
                     abs(matSrc.at<cv::Vec3b>(y,x)[2] - matDest.at<cv::Vec3b>(y,x)[2]) > tolerance )
                     {
                         if(x > matX*0.5 && y > matY*0.5)
-                            evaluateMats(fuente,fuente->x+x,fuente->y+y, 0);
+                            evaluateMats(pFuente,pFuente->x+x,pFuente->y+y, 0);
                         return false;
                     }
                 }
             }
+        cout << "Coincidencia encontrada" << endl;
         return true;
     
         
@@ -179,32 +181,31 @@ struct hashMap{
 
     // --------------------  DIVIDE AND CONQUER  -------------------------
 
-    hashBucket * getHalf(hashBucket * bucket, bool first){ 
-        int mitad = floor(bucket->cant/2);
+    hashBucket * getHalf(hashBucket * pBucket, bool pFirst){ 
+        int mitad = floor(pBucket->cant/2);
         hashBucket * bucketHalf = new hashBucket();
-        hashNode * temp = bucket->first;
+        hashNode * temp = pBucket->first;
         for (int i = 0; i < mitad; i++)
         {  
             temp = temp->next;
         }
-        if(first){
-            bucketHalf ->first = bucket->first;
+        if(pFirst){
+            bucketHalf ->first = pBucket->first;
             bucketHalf->last=temp->before;
             bucketHalf->cant = mitad;
         }
         else{
             bucketHalf->first=temp;
-            bucketHalf->last = bucket->last;
+            bucketHalf->last = pBucket->last;
             bucketHalf->cant = mitad;
         }
-        
         return bucketHalf;
 
     }
 
-        bool matDifferenceDivideAndConquer(hashNode * fuente,hashNode * destino){
-        Mat matSrc = fuente->value;
-        Mat matDest = destino->value;
+        bool matDifferenceDivideAndConquer(hashNode * pFuente,hashNode * pDestino){
+        Mat matSrc = pFuente->value;
+        Mat matDest = pDestino->value;
         int matY = floor(matSrc.rows*percX);
         int matX = floor(matSrc.cols*percY);
         int total = matSrc.rows * matSrc.cols;
@@ -221,20 +222,21 @@ struct hashMap{
                     }
                 }
             }
+        cout << "Coincidencia encontrada" << endl;
         return true;
         
     }
 
-    int divideLists(hashBucket * bucket, hashNode * nodo){
-        if(bucket->cant == 1){
-            return matDifferenceDivideAndConquer(bucket->first,nodo);
+    int divideLists(hashBucket * pBucket, hashNode * pNodo){
+        if(pBucket->cant == 1){
+            return matDifferenceDivideAndConquer(pBucket->first,pNodo);
         }
-        else if(bucket->first->g <= nodo->g ){
-            hashBucket * bucketHalf1 = getHalf(bucket,true);
-            hashBucket * bucketHalf2 = getHalf(bucket,false);
-            return divideLists(bucketHalf1, nodo) + divideLists(bucketHalf2, nodo);
+        else if(pBucket->first->g <= pNodo->g ){
+            hashBucket * bucketHalf1 = getHalf(pBucket,true);
+            hashBucket * bucketHalf2 = getHalf(pBucket,false);
+            return divideLists(bucketHalf1, pNodo) + divideLists(bucketHalf2, pNodo);
         }
-        else if(bucket->first->g > nodo->g){
+        else if(pBucket->first->g > pNodo->g){
             return 0;
         }
         return 0;
@@ -256,13 +258,13 @@ struct hashMap{
 
     // --------------------  PROBABILISTICO  -------------------------
 
-    int probabilisticPerNode(hashNode * nodo, hashBucket * bucket){
+    int probabilisticPerNode(hashNode * pNodo, hashBucket * pBucket){
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator(seed);
         std::uniform_int_distribution<int> distributionInteger(1, 100);
         int revision;
         double count = 0;
-        hashNode* tmpDest = bucket->first;
+        hashNode* tmpDest = pBucket->first;
         double percentage = 0;
         int random;
         while (tmpDest != NULL)
@@ -271,18 +273,20 @@ struct hashMap{
                 revision = probPiece;
                 while (tmpDest->next != NULL && revision > 0)
                 {
-                    if(!tmpDest->paired && tolerance > abs(nodo->g - tmpDest->g))
-                        count += matDifferenceBT(nodo, tmpDest);
+                    if(!tmpDest->paired && tolerance > abs(pNodo->g - tmpDest->g))
+                        count += matDifferenceBT(pNodo, tmpDest);
                     revision--;
                     tmpDest = tmpDest->next;
                 }
                 if(count != 0){
                     percentage = (count/probPiece)*100;
+                    cout << "Recalculo de percentage: " << percentage << endl;
                 }
             }
             else{
                 random =  distributionInteger(generator);
                 if( random < percentage && !tmpDest->paired){
+                    cout << "Coincidencia generada por aleatorio. Percentage: " << percentage << "> Random: " << random <<endl;
                     count++;
                     percentage = (count/probPiece)*100;
                 }
