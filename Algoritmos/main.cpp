@@ -13,8 +13,8 @@ Mat rescale(Mat image){
     resize(image,resized,resized.size(),0,0,INTER_CUBIC);
     return resized;
 }
-hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTolerance){
-    hashMap hash = hashMap(pPercX, pPercY, pTolerance);
+hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTolerance, float pProbPercentage){
+    hashMap hash = hashMap(pPercX, pPercY, pTolerance, pProbPercentage);
     int yTimes = image.rows;
     int xTimes = image.cols;
     std::vector<hashNode*> verticalBeforeNode;
@@ -40,43 +40,69 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
 
     return hash;
 }
-int compareBT(hashMap hash1,hashMap hash2){
+double compareBT(hashMap hash1,hashMap hash2){
+    unsigned t0, t1;
+    double time;  
+	t0=clock();
+	clock_t start, final;
+    start = clock();
     int num = 0;
     for(int i=0; i < 256; i++){
         int biggest = hash1.findBiggestBucket();
-        //std::cout<<"Bucket # "<<biggest<<std::endl;
-        num = hash2.getCoincidencesBT(hash1,i, num);
+        num += hash2.getCoincidencesBT(hash1,i);
     }
-    std::cout<<"Coincidencias: "<< num <<std::endl;
-    return 0;
+    t1 = clock();
+    time = (double(t1-t0)/CLOCKS_PER_SEC);
+    std::cout<<"Coincidencias BT: "<< num <<std::endl;
+    return time;
 }
-int compareDivideAndConquer(hashMap hash1,hashMap hash2){
+double compareDivideAndConquer(hashMap hash1,hashMap hash2){
+    unsigned t0, t1;
+    double time;  
+	t0=clock();
+	clock_t start, final;
+    start = clock();
     int num = 0;
     for(int i=0; i < 256; i++){
-        //cout<<"Cantidad en  bucket "<<hash1.buckets[i].cant<<endl;
-        num = hash2.getCoincidencesDivideAndConquer(hash1,i, num);
+        num += hash2.getCoincidencesDivideAndConquer(hash1,i);
     }
+    t1 = clock();
+    time = (double(t1-t0)/CLOCKS_PER_SEC);
     std::cout<<"Coincidencias divide and conquer: "<< num <<std::endl;
-    return 0;
+    return time;
 }
+
+double compareProbabilistic(hashMap hash1,hashMap hash2){
+    unsigned t0, t1;
+    double time;   
+	t0=clock();
+	clock_t start, final;
+    start = clock();
+    int num = 0;
+    for(int i=0; i < 256; i++){
+        num += hash2.getCoincidencesProbabilistic(hash1,i);
+    }
+    t1 = clock();
+    time = (double(t1-t0)/CLOCKS_PER_SEC);
+    std::cout<<"Coincidencias probabilistic: "<< num <<std::endl;
+    return time;
+}
+
 int main(){
-    double values[4];
-    readFile("values.txt", values,4);
+    double values[5];
+    readFile("values.txt", values,5);
     int index = 0;
 
-    Mat image1 = imread("imag1.jpg");
-    Mat image2 = imread("imag2con1.jpg");
+    Mat image1 = imread("original.jpg");
+    Mat image2 = imread("inserciones.jpg");
     image1 = rescale(image1);
     image2 = rescale(image2);
-    std::cout<<"Termina reescalado"<<std::endl;
-    hashMap hash1 = matToHash(image1, values[0], values[1], values[2], values[3]);
-    cout << "hice hash1" << endl;
-    hashMap hash2 = matToHash(image2, values[0], values[1], values[2], values[3]);
-    std::cout<<"Termina hashes"<<std::endl;
-    compareDivideAndConquer(hash1,hash2);
-    compareBT(hash1,hash2);
-    std::cout<<"Termina comparacion"<<std::endl;
-    imshow("Prueba de que somos un genio", image2);
-    waitKey(0);
+    hashMap hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
+    hashMap hash2 = matToHash(image2, values[0], values[1], values[2], values[3], values[4]);
+    cout<<"Tiempo transcurrido: " <<compareDivideAndConquer(hash1,hash2)<<" segundos"<<endl;
+    cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
+    hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
+    hash2 = matToHash(image2, values[0], values[1], values[2], values[3], values[4]);
+    cout<<"Tiempo transcurrido: " <<compareProbabilistic(hash1,hash2)<<" segundos"<<endl;
     return 0;
 }
