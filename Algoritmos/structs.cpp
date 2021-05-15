@@ -1,5 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include "files.cpp"
+#include <chrono>
+#include <random>
 using namespace cv;
 #define SCALE 0.25
 #define SWIDTH floor(192*SCALE) 
@@ -82,13 +84,13 @@ struct hashMap{
     double percX;
     double percY;
     int tolerance;
-    hashMap(double pPercX, double pPercY, int pTolerance){
+    int probPiece;
+    double probPercentage;
+    hashMap(double pPercX, double pPercY, int pTolerance, double pProbPercentage){
         percX = pPercX;
-        std::cout << percX << endl; 
         percY = pPercY;
-        std::cout << percY << endl;
         tolerance = pTolerance;
-        std::cout << pTolerance << endl;
+        probPercentage = pProbPercentage;
         for(int i=0; i < 256; i++){
             buckets[i] = hashBucket();
         }
@@ -98,6 +100,7 @@ struct hashMap{
         return buckets[pixelColor[0]].insert(table,x,y);
          
     }
+    // --------------------  BACKTRACKING / DINAMICA  -------------------------
     int findBiggestBucket(){
         hashBucket * biggest = NULL;
         int biggestNumber;
@@ -126,7 +129,7 @@ struct hashMap{
         }        
     }
 
-    bool matDifferenceBT(hashNode * fuente,hashNode * destino, int count){
+    bool matDifferenceBT(hashNode * fuente,hashNode * destino){
         Mat matSrc = fuente->value;
         Mat matDest = destino->value;
         String name1, name2;
@@ -148,14 +151,12 @@ struct hashMap{
                     }
                 }
             }
-        std::cout<<"Coincidencia encontrada"<<std::endl;
         return true;
     
         
     }
-    int getCoincidencesBT(hashMap pHash, int pBucket,int count){
-        /*std::cout<<"Pixeles en source: "<< this->buckets[pBucket].cant <<std::endl;
-        std::cout<<"Pixeles en dest: "<< pHash.buckets[pBucket].cant <<std::endl;*/
+    int getCoincidencesBT(hashMap pHash, int pBucket){
+        int count = 0;
         hashNode* tmpSrc = this->buckets[pBucket].first;
         hashNode* tmpDest;
         while(tmpSrc != NULL){
@@ -163,7 +164,7 @@ struct hashMap{
             while(tmpDest!= NULL){
                 if(abs(tmpDest->g -tmpSrc->g)< tolerance
                 && !tmpDest->paired
-                && matDifferenceBT(tmpSrc,tmpDest, count)){
+                && matDifferenceBT(tmpSrc,tmpDest)){
                     count++;
                     tmpDest->paired = true;
                     break;
@@ -172,10 +173,13 @@ struct hashMap{
             }
             tmpSrc = tmpSrc->next;
         }
+
         return count;
     }
+
+    // --------------------  DIVIDE AND CONQUER  -------------------------
+
     hashBucket * getHalf(hashBucket * bucket, bool first){ 
-        //cout<<bucket->cant<<endl;
         int mitad = floor(bucket->cant/2);
         hashBucket * bucketHalf = new hashBucket();
         hashNode * temp = bucket->first;
@@ -217,18 +221,15 @@ struct hashMap{
                     }
                 }
             }
-        std::cout<<"Coincidencia encontrada"<<std::endl;
         return true;
         
     }
 
     int divideLists(hashBucket * bucket, hashNode * nodo){
         if(bucket->cant == 1){
-            //cout<<"Llega a un elemento"<<endl;
             return matDifferenceDivideAndConquer(bucket->first,nodo);
         }
         else if(bucket->first->g <= nodo->g ){
-            //cout<<"Division"<<endl;
             hashBucket * bucketHalf1 = getHalf(bucket,true);
             hashBucket * bucketHalf2 = getHalf(bucket,false);
             return divideLists(bucketHalf1, nodo) + divideLists(bucketHalf2, nodo);
@@ -238,21 +239,72 @@ struct hashMap{
         }
         return 0;
     }
-    int getCoincidencesDivideAndConquer(hashMap pHash, int pBucket,int count){
+    int getCoincidencesDivideAndConquer(hashMap pHash, int pBucket){
+        int count = 0;
         hashNode* tmpSrc = this->buckets[pBucket].first;
         hashBucket * cBucket = (pHash.buckets+pBucket);
         if(cBucket->first == NULL){
             return count;
         } 
         while(tmpSrc != NULL){
-            if(tmpSrc->g > cBucket->first->g ){
-               // cout<<"Entra al if"<<endl;
-                count += divideLists(cBucket, tmpSrc);
-            }
-            //cout<<"siguiente"<<endl;
+            count += divideLists(cBucket, tmpSrc);
             tmpSrc = tmpSrc->next;
         }
         return count;
         
+    }
+
+    // --------------------  PROBABILISTICO  -------------------------
+
+    int probabilisticPerNode(hashNode * nodo, hashBucket * bucket){
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine generator(seed);
+        std::uniform_int_distribution<int> distributionInteger(1, 100);
+        int revision;
+        double count = 0;
+        hashNode* tmpDest = bucket->first;
+        double percentage = 0;
+        int random;
+        while (tmpDest != NULL)
+        {
+            if (percentage == 0){
+                revision = probPiece;
+                while (tmpDest->next != NULL && revision > 0)
+                {
+                    if(!tmpDest->paired && tolerance > abs(nodo->g - tmpDest->g))
+                        count += matDifferenceBT(nodo, tmpDest);
+                    revision--;
+                    tmpDest = tmpDest->next;
+                }
+                if(count != 0){
+                    percentage = (count/probPiece)*100;
+                }
+            }
+            else{
+                random =  distributionInteger(generator);
+                if( random < percentage && !tmpDest->paired){
+                    count++;
+                    percentage = (count/probPiece)*100;
+                }
+            }
+            tmpDest = tmpDest->next;
+        }
+        return count; 
+    }
+
+
+    int getCoincidencesProbabilistic(hashMap pHash, int pBucket){
+        int count = 0;
+        hashNode* tmpSrc = this->buckets[pBucket].first;
+        hashBucket * cBucket = (pHash.buckets+pBucket);
+        probPiece =  floor(cBucket->cant * probPercentage);
+        if(pHash.buckets[pBucket].cant == 0){
+            return count;
+        } 
+        while(tmpSrc != NULL){
+            count += probabilisticPerNode(tmpSrc, cBucket);
+            tmpSrc = tmpSrc->next;
+        }
+        return count;
     }
 };
