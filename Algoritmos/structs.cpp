@@ -91,8 +91,8 @@ struct hashMap{
         percY = pPercY;
         tolerance = pTolerance;
         probPercentage = pProbPercentage;
-        for(int i=0; i < 256; i++){
-            buckets[i] = hashBucket();
+        for(int bucketNum=0; bucketNum < 256; bucketNum++){
+            buckets[bucketNum] = hashBucket();
         }
     }
     hashNode* insert(Mat pTable, int pX, int pY){
@@ -104,15 +104,15 @@ struct hashMap{
     int findBiggestBucket(){
         hashBucket * biggest = NULL;
         int biggestNumber;
-        for (int i = 0; i < 256; i++)
+        for (int bucketNum = 0; bucketNum < 256; bucketNum++)
         {
-            if((biggest == NULL || biggest->cant<buckets[i].cant) && !buckets[i].checked){
-                biggest = &buckets[i];
-                biggestNumber = i;
+            if((biggest == NULL || biggest->cant<buckets[bucketNum].cant) && !buckets[bucketNum].checked){
+                biggest = &buckets[bucketNum];
+                biggestNumber = bucketNum;
             }
         }
         biggest->checked=true;
-        cout << "Biggest Bucket: " << biggestNumber << endl;
+        //cout << "Biggest Bucket: " << biggestNumber << endl;
         return biggestNumber;
     } 
 
@@ -152,7 +152,7 @@ struct hashMap{
                     }
                 }
             }
-        cout << "Coincidencia encontrada" << endl;
+        //cout << "Coincidencia encontrada" << endl;
         return true;
     
         
@@ -185,7 +185,7 @@ struct hashMap{
         int mitad = floor(pBucket->cant/2);
         hashBucket * bucketHalf = new hashBucket();
         hashNode * temp = pBucket->first;
-        for (int i = 0; i < mitad; i++)
+        for (int bucketNum = 0; bucketNum < mitad; bucketNum++)
         {  
             temp = temp->next;
         }
@@ -222,7 +222,7 @@ struct hashMap{
                     }
                 }
             }
-        cout << "Coincidencia encontrada" << endl;
+        //cout << "Coincidencia encontrada" << endl;
         return true;
         
     }
@@ -280,13 +280,13 @@ struct hashMap{
                 }
                 if(count != 0){
                     percentage = (count/probPiece)*100;
-                    cout << "Recalculo de percentage: " << percentage << endl;
+                    //cout << "Recalculo de percentage: " << percentage << endl;
                 }
             }
             else{
                 random =  distributionInteger(generator);
                 if( random < percentage && !tmpDest->paired){
-                    cout << "Coincidencia generada por aleatorio. Percentage: " << percentage << "> Random: " << random <<endl;
+                    //cout << "Coincidencia generada por aleatorio. Percentage: " << percentage << "> Random: " << random <<endl;
                     count++;
                     percentage = (count/probPiece)*100;
                 }

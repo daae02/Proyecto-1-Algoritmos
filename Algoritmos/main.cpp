@@ -47,14 +47,14 @@ double compareBT(hashMap pHash1,hashMap pHash2){
 	clock_t start, final;
     start = clock();
     int num = 0;
-    for(int i=0; i < 256; i++){
-        cout << "Bucket #" << i <<endl;
+    for(int bucketNum=0; bucketNum < 256; bucketNum++){
+        //cout << "Bucket #" << bucketNum <<endl;
         int biggest = pHash1.findBiggestBucket();
-        num += pHash2.getCoincidencesBT(pHash1,i);
+        num += pHash2.getCoincidencesBT(pHash1,bucketNum);
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
-    std::cout<<"Coincidencias BT: "<< num <<std::endl;
+    //std::cout<<"Coincidencias BT: "<< num <<std::endl;
     return time;
 }
 double compareDivideAndConquer(hashMap pHash1,hashMap pHash2){
@@ -64,9 +64,9 @@ double compareDivideAndConquer(hashMap pHash1,hashMap pHash2){
 	clock_t start, final;
     start = clock();
     int num = 0;
-    for(int i=0; i < 256; i++){
-        cout << "Bucket #" << i <<endl;
-        num += pHash2.getCoincidencesDivideAndConquer(pHash1,i);
+    for(int bucketNum=0; bucketNum < 256; bucketNum++){
+        //cout << "Bucket #" << bucketNum <<endl;
+        num += pHash2.getCoincidencesDivideAndConquer(pHash1,bucketNum);
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
@@ -81,9 +81,9 @@ double compareProbabilistic(hashMap pHash1,hashMap pHash2){
 	clock_t start, final;
     start = clock();
     int num = 0;
-    for(int i=0; i < 256; i++){
-        cout << "Bucket #" << i <<endl;
-        num += pHash2.getCoincidencesProbabilistic(pHash1,i);
+    for(int bucketNum=0; bucketNum < 256; bucketNum++){
+        //cout << "Bucket #" << bucketNum <<endl;
+        num += pHash2.getCoincidencesProbabilistic(pHash1,bucketNum);
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
@@ -96,8 +96,8 @@ int main(){
     readFile("values.txt", values,5);
     int index = 0;
     // --- Generación de la estructura de datos ---
-    Mat image1 = imread("original.jpg");
-    Mat image2 = imread("inserciones.jpg");
+    Mat image1 = imread("img3.jpg");
+    Mat image2 = imread("img2.jpg");
     image1 = rescale(image1);
     image2 = rescale(image2);
     hashMap hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
@@ -107,7 +107,7 @@ int main(){
     cout<<"Tiempo transcurrido: " <<compareDivideAndConquer(hash1,hash2)<<" segundos"<<endl;
     
     // --- Llamada Backtracking con Dinámica ---
-    cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
+    //cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
     
     // --- Regeneración de datos ---
     hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
