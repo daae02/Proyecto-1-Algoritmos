@@ -1,29 +1,29 @@
 #include <iostream>
 #include "structs.cpp"
 
-Mat copy(Mat source, int pX, int pY){
+Mat copy(Mat pSource, int pX, int pY){
     Rect roi(pX,pY,SWIDTH,SHEIGHT);
-    Mat sliding = source(roi);
+    Mat sliding = pSource(roi);
     return sliding;
 }
-Mat rescale(Mat image){
-    int width = floor(image.cols * SCALE) ;
-    int height = floor(image.rows * SCALE);
+Mat rescale(Mat pImage){
+    int width = floor(pImage.cols * SCALE) ;
+    int height = floor(pImage.rows * SCALE);
     Mat resized = Mat(height,width,3);
-    resize(image,resized,resized.size(),0,0,INTER_CUBIC);
+    resize(pImage,resized,resized.size(),0,0,INTER_CUBIC);
     return resized;
 }
-hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTolerance, float pProbPercentage){
+hashMap matToHash(Mat pImage, float pPercX, float pPercY,int pSampleRate, int pTolerance, float pProbPercentage){
     hashMap hash = hashMap(pPercX, pPercY, pTolerance, pProbPercentage);
-    int yTimes = image.rows;
-    int xTimes = image.cols;
+    int yTimes = pImage.rows;
+    int xTimes = pImage.cols;
     std::vector<hashNode*> verticalBeforeNode;
     hashNode * beforeNode;
     hashNode * current = NULL;
     for(int y = 0; y+SHEIGHT < yTimes;){
         beforeNode = NULL;
         for(int x = 0; x+SWIDTH < xTimes;){
-            current = hash.insert(copy(image,x,y),x,y);
+            current = hash.insert(copy(pImage,x,y),x,y);
             if(beforeNode != NULL){
                 beforeNode->followingMat = current;
             }
@@ -31,40 +31,42 @@ hashMap matToHash(Mat image, float pPercX, float pPercY,int sampleRate, int pTol
                 verticalBeforeNode.at(verticalBeforeNode.size()-1)->verticalFollowingMat = current;
             }
             verticalBeforeNode.push_back(current);
-            x +=sampleRate;
+            x +=pSampleRate;
             beforeNode = current;
         }
         verticalBeforeNode.clear();
-        y+=sampleRate;
+        y+=pSampleRate;
     }
 
     return hash;
 }
-double compareBT(hashMap hash1,hashMap hash2){
+double compareBT(hashMap pHash1,hashMap pHash2){
     unsigned t0, t1;
     double time;  
 	t0=clock();
 	clock_t start, final;
     start = clock();
     int num = 0;
-    for(int i=0; i < 256; i++){
-        int biggest = hash1.findBiggestBucket();
-        num += hash2.getCoincidencesBT(hash1,i);
+    for(int bucketNum=0; bucketNum < 256; bucketNum++){
+        //cout << "Bucket #" << bucketNum <<endl;
+        int biggest = pHash1.findBiggestBucket();
+        num += pHash2.getCoincidencesBT(pHash1,bucketNum);
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
-    std::cout<<"Coincidencias BT: "<< num <<std::endl;
+    //std::cout<<"Coincidencias BT: "<< num <<std::endl;
     return time;
 }
-double compareDivideAndConquer(hashMap hash1,hashMap hash2){
+double compareDivideAndConquer(hashMap pHash1,hashMap pHash2){
     unsigned t0, t1;
     double time;  
 	t0=clock();
 	clock_t start, final;
     start = clock();
     int num = 0;
-    for(int i=0; i < 256; i++){
-        num += hash2.getCoincidencesDivideAndConquer(hash1,i);
+    for(int bucketNum=0; bucketNum < 256; bucketNum++){
+        //cout << "Bucket #" << bucketNum <<endl;
+        num += pHash2.getCoincidencesDivideAndConquer(pHash1,bucketNum);
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
@@ -72,15 +74,16 @@ double compareDivideAndConquer(hashMap hash1,hashMap hash2){
     return time;
 }
 
-double compareProbabilistic(hashMap hash1,hashMap hash2){
+double compareProbabilistic(hashMap pHash1,hashMap pHash2){
     unsigned t0, t1;
     double time;   
 	t0=clock();
 	clock_t start, final;
     start = clock();
     int num = 0;
-    for(int i=0; i < 256; i++){
-        num += hash2.getCoincidencesProbabilistic(hash1,i);
+    for(int bucketNum=0; bucketNum < 256; bucketNum++){
+        //cout << "Bucket #" << bucketNum <<endl;
+        num += pHash2.getCoincidencesProbabilistic(pHash1,bucketNum);
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
@@ -92,17 +95,25 @@ int main(){
     double values[5];
     readFile("values.txt", values,5);
     int index = 0;
-
-    Mat image1 = imread("original.jpg");
-    Mat image2 = imread("inserciones.jpg");
+    // --- Generación de la estructura de datos ---
+    Mat image1 = imread("img3.jpg");
+    Mat image2 = imread("img2.jpg");
     image1 = rescale(image1);
     image2 = rescale(image2);
     hashMap hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
     hashMap hash2 = matToHash(image2, values[0], values[1], values[2], values[3], values[4]);
+
+    // --- Llamada Divide and Conquer ---
     cout<<"Tiempo transcurrido: " <<compareDivideAndConquer(hash1,hash2)<<" segundos"<<endl;
-    cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
+    
+    // --- Llamada Backtracking con Dinámica ---
+    //cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
+    
+    // --- Regeneración de datos ---
     hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
     hash2 = matToHash(image2, values[0], values[1], values[2], values[3], values[4]);
+    
+    // --- Llamada Probabilístico ---
     cout<<"Tiempo transcurrido: " <<compareProbabilistic(hash1,hash2)<<" segundos"<<endl;
     return 0;
 }
