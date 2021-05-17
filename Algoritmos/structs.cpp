@@ -133,7 +133,6 @@ struct hashMap{
     bool matDifferenceBT(hashNode * pFuente,hashNode * pDestino){
         Mat matSrc = pFuente->value;
         Mat matDest = pDestino->value;
-        String name1, name2;
         int matY = floor(matSrc.rows*percX);
         int matX = floor(matSrc.cols*percY);
         int total = matSrc.rows * matSrc.cols;
@@ -222,7 +221,6 @@ struct hashMap{
                     }
                 }
             }
-        //cout << "Coincidencia encontrada" << endl;
         return true;
         
     }
@@ -244,7 +242,7 @@ struct hashMap{
     int getCoincidencesDivideAndConquer(hashMap pHash, int pBucket){
         int count = 0;
         hashNode* tmpSrc = this->buckets[pBucket].first;
-        hashBucket * cBucket = (pHash.buckets+pBucket);
+        hashBucket * cBucket = pHash.buckets+pBucket;
         if(cBucket->first == NULL){
             return count;
         } 
@@ -261,33 +259,32 @@ struct hashMap{
     int probabilisticPerNode(hashNode * pNodo, hashBucket * pBucket){
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator(seed);
-        std::uniform_int_distribution<int> distributionInteger(1, 100);
+        std::uniform_real_distribution<float> distributionInteger(0, 100);
         int revision;
         double count = 0;
         hashNode* tmpDest = pBucket->first;
         double percentage = 0;
-        int random;
         while (tmpDest != NULL)
         {
             if (percentage == 0){
                 revision = probPiece;
                 while (tmpDest->next != NULL && revision > 0)
                 {
-                    if(!tmpDest->paired && tolerance > abs(pNodo->g - tmpDest->g))
-                        count += matDifferenceBT(pNodo, tmpDest);
+                    if(!tmpDest->paired && tolerance > abs(pNodo->g - tmpDest->g) && matDifferenceBT(pNodo, tmpDest)){
+                        count++;
+                        tmpDest->paired = true;
+                    }
                     revision--;
                     tmpDest = tmpDest->next;
                 }
                 if(count != 0){
                     percentage = (count/probPiece)*100;
-                    //cout << "Recalculo de percentage: " << percentage << endl;
                 }
             }
             else{
-                random =  distributionInteger(generator);
-                if( random < percentage && !tmpDest->paired){
-                    //cout << "Coincidencia generada por aleatorio. Percentage: " << percentage << "> Random: " << random <<endl;
+                if( distributionInteger(generator) < percentage && !tmpDest->paired){
                     count++;
+                    tmpDest->paired = true;
                     percentage = (count/probPiece)*100;
                 }
             }
