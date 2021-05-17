@@ -54,7 +54,7 @@ double compareBT(hashMap pHash1,hashMap pHash2){
     }
     t1 = clock();
     time = (double(t1-t0)/CLOCKS_PER_SEC);
-    //std::cout<<"Coincidencias BT: "<< num <<std::endl;
+    std::cout<<"Coincidencias BT: "<< num <<std::endl;
     return time;
 }
 double compareDivideAndConquer(hashMap pHash1,hashMap pHash2){
@@ -107,7 +107,7 @@ int main(){
     cout<<"Tiempo transcurrido: " <<compareDivideAndConquer(hash1,hash2)<<" segundos"<<endl;
     
     // --- Llamada Backtracking con Dinámica ---
-    //cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
+    cout<<"Tiempo transcurrido: " <<compareBT(hash1,hash2)<<" segundos"<<endl;
     
     // --- Regeneración de datos ---
     hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
