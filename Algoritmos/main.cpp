@@ -96,8 +96,8 @@ int main(){
     readFile("values.txt", values,5);
     int index = 0;
     // --- Generación de la estructura de datos ---
-    Mat image1 = imread("img3.jpg");
-    Mat image2 = imread("img2.jpg");
+    Mat image1 = imread("original.jpg");
+    Mat image2 = imread("inserciones.jpg");
     image1 = rescale(image1);
     image2 = rescale(image2);
     hashMap hash1 = matToHash(image1, values[0], values[1], values[2], values[3], values[4]);
