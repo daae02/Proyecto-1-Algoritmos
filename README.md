@@ -1,4 +1,4 @@
-# Proyecto 1 Algoritmos
+# Proyecto 1 AlgoritmosCancel changes
  - Primer Proyecto de Analisis de Algoritmos Ingenieria en Computacion
 
 # O grandes
@@ -26,6 +26,6 @@
    > Porcentaje de accuracy: 100% en un tiempo constante de 0.08s
    
  - Probabilístico: 6-7 coincidencias de 6 en un tiempo de 0.011s-0.013s
-   > Porcentaje de accuracy: 100% con un porcentaje de fallo del 0.08% en un tiempo promedio de 0.12s
+   > Porcentaje de accuracy: 100% con un porcentaje de fallo del 0.08% en un tiempo promedio de 0.012s
 
 Viendo este análisis se puede concluir que el algoritmo menos costoso y preciso es el de Backtracking con programación dinámica, ya que gracias a la implementación de   programación dinámica con cada iteración se optimiza el algoritmo descaratando elementos, al mismo tiempo que mantiene la precición del algoritmo de backtracking.
